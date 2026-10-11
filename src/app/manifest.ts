@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-/** PWA の manifest（0013）。アイコンは仮。 */
+/** PWA の manifest（0013）。アイコンは src/app/icon.tsx が作る（絵柄は仮）。 */
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "chirashi-box",
@@ -11,6 +11,10 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#ffffff",
     theme_color: "#ffffff",
     lang: "ja",
-    icons: [{ src: "/favicon.ico", sizes: "any", type: "image/x-icon" }],
+    icons: [
+      { src: "/icon/192", sizes: "192x192", type: "image/png" },
+      { src: "/icon/512", sizes: "512x512", type: "image/png" },
+      { src: "/icon/512", sizes: "512x512", type: "image/png", purpose: "maskable" },
+    ],
   };
 }

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
+import { InstallHint } from "@/components/InstallHint";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Link href="/me">マイページ</Link>
           </nav>
         </header>
+        <InstallHint />
         <main className="flex-1 px-4 py-4">{children}</main>
       </body>
     </html>
