@@ -21,28 +21,35 @@ export class HttpPageFetcher implements PageFetcher {
   async fetch(url: string): Promise<FetchResult> {
     let current = url;
     for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-      if (!(await isPublicHttpUrl(current))) return { kind: "failed" };
+      if (!(await isPublicHttpUrl(current))) return failed(current, "公開されていないアドレス");
       if (!(await robotsAllows(current))) return { kind: "robots_disallowed" };
 
       const response = await request(current);
-      if (!response) return { kind: "failed" };
+      if (!response) return failed(current, "接続できない、または時間切れ");
 
       if (response.status >= 300 && response.status < 400) {
         const location = response.headers.get("location");
-        if (!location) return { kind: "failed" };
+        if (!location) return failed(current, `転送先のない ${response.status}`);
         current = new URL(location, current).toString();
         continue;
       }
       const contentType = response.headers.get("content-type") ?? "";
       const isJson = contentType.includes("application/json");
-      if (!response.ok || !(contentType.includes("text/html") || isJson)) return { kind: "failed" };
+      if (!response.ok) return failed(current, `HTTP ${response.status}`);
+      if (!(contentType.includes("text/html") || isJson)) return failed(current, `対応していない形式（${contentType}）`);
 
       const html = await readLimited(response);
-      if (html === null) return { kind: "failed" };
+      if (html === null) return failed(current, "大きすぎる、または読み取れない");
       return isJson ? { kind: "ok", html, finalUrl: current, format: "json" } : { kind: "ok", html, finalUrl: current };
     }
-    return { kind: "failed" };
+    return failed(current, "転送が多すぎる");
   }
+}
+
+/** 取得に失敗した理由をログに残す。巡回のログで、館ごとの失敗の原因を追えるようにする。 */
+function failed(url: string, reason: string): FetchResult {
+  console.warn(`取得に失敗: ${url}（${reason}）`);
+  return { kind: "failed" };
 }
 
 async function request(url: string): Promise<Response | null> {
@@ -53,7 +60,8 @@ async function request(url: string): Promise<Response | null> {
       headers: { "user-agent": USER_AGENT, accept: "text/html, application/json;q=0.9" },
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-  } catch {
+  } catch (error) {
+    console.warn(`接続エラー: ${url}（${error instanceof Error ? (error.cause instanceof Error ? error.cause.message : error.message) : String(error)}）`);
     return null;
   }
 }
