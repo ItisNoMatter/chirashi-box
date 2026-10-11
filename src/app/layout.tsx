@@ -29,6 +29,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </header>
         <InstallHint />
         <main className="flex-1 px-4 py-4">{children}</main>
+        <footer className="border-t border-neutral-200 px-4 py-4 text-xs leading-relaxed text-neutral-500 dark:border-neutral-800">
+          {/* 掲載についての窓口（0028）。サイトの持ち主が、リンクや画像を外してほしいと伝えられるように。 */}
+          掲載について：展示の情報やリンク、画像の掲載を控えてほしい場合は、
+          <a href="mailto:chirashi.box.app@gmail.com" className="underline">
+            chirashi.box.app@gmail.com
+          </a>
+          までご連絡ください。
+        </footer>
       </body>
     </html>
   );

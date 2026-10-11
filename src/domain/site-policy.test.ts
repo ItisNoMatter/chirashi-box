@@ -7,8 +7,18 @@ const exhibition = {
 };
 
 describe("applySitePolicies", () => {
-  it("制限のないサイトなら、リンクも画像もそのまま出す", () => {
-    expect(applySitePolicies(exhibition, [])).toEqual(exhibition);
+  it("規約を確認済みで制限のないサイトなら、リンクも画像もそのまま出す", () => {
+    expect(applySitePolicies(exhibition, [{ domain: "mimt.jp", allowLinks: true, allowImages: true }])).toEqual(exhibition);
+  });
+
+  it("規約をまだ確認していないサイトなら、リンクは出すが、画像は出さない（0028）", () => {
+    expect(applySitePolicies(exhibition, [])).toEqual({ ...exhibition, imageUrl: null });
+  });
+
+  it("画像が別のドメイン（CDN など）にあっても、出どころのページのサイトが確認済みなら出す", () => {
+    const item = { officialUrl: "https://mimt.jp/ex/fontanesi/", imageUrl: "https://cdn.example.net/fontanesi.jpg" };
+
+    expect(applySitePolicies(item, [{ domain: "mimt.jp", allowLinks: true, allowImages: true }])).toEqual(item);
   });
 
   it("リンクを禁じるサイトなら、公式ページへのリンクを外す", () => {

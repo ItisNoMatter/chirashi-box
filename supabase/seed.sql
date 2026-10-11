@@ -13,3 +13,9 @@ insert into public.exhibitions (venue_id, title, normalized_title, start_date, e
   ('00000000-0000-0000-0000-00000000a002', '春のコレクション展', '春のコレクション展', current_date + 12, current_date + 90, 'https://ueno-gallery.example/ex/2'),
   ('00000000-0000-0000-0000-00000000a003', '港の100年', '港の100年', current_date + 30, current_date + 120, 'https://yokohama-photo.example/ex/1'),
   ('00000000-0000-0000-0000-00000000a003', '夜の街を撮る', '夜の街を撮る', current_date - 90, current_date - 5, 'https://yokohama-photo.example/ex/0');
+
+-- 架空の会場のサイトは、規約を確認済みで制限なしとして扱う（0028: 行がないサイトの画像は出さない）。
+insert into public.site_policies (domain, allow_links, allow_images, note) values
+  ('minato-moca.example', true, true, '開発用の架空のサイト'),
+  ('ueno-gallery.example', true, true, '開発用の架空のサイト'),
+  ('yokohama-photo.example', true, true, '開発用の架空のサイト');
