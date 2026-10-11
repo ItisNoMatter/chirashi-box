@@ -1,5 +1,5 @@
 begin;
-select plan(9);
+select plan(12);
 
 -- 準備（postgres ロールで投入）
 insert into auth.users (id, email) values
@@ -19,6 +19,10 @@ insert into public.interests (user_id, exhibition_id) values
   ('22222222-2222-2222-2222-222222222222', 'eeeeeeee-0000-0000-0000-000000000002');
 
 insert into public.blocked_domains (domain) values ('aggregator.example');
+
+insert into public.pending_registrations (user_id, url, content_hash, extraction, publisher) values
+  ('11111111-1111-1111-1111-111111111111', 'https://a.example/1', 'h1', '{}', 'venue'),
+  ('22222222-2222-2222-2222-222222222222', 'https://b.example/1', 'h2', '{}', 'venue');
 
 -- 未ログイン（anon）
 set local role anon;
@@ -57,6 +61,22 @@ select throws_ok(
     values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'X展', 'x展', '2026-10-01', '2026-12-01')$$,
   '42501', null,
   'a user cannot write exhibitions directly');
+
+select results_eq(
+  'select url from public.pending_registrations',
+  $$values ('https://a.example/1'::text)$$,
+  'a user sees only their own pending registrations');
+
+select throws_ok(
+  $$insert into public.pending_registrations (user_id, url, content_hash, extraction, publisher)
+    values ('11111111-1111-1111-1111-111111111111', 'https://a.example/2', 'h', '{}', 'venue')$$,
+  '42501', null,
+  'a user cannot create pending registrations directly');
+
+select throws_ok(
+  $$insert into public.registration_attempts (user_id) values ('11111111-1111-1111-1111-111111111111')$$,
+  '42501', null,
+  'a user cannot write registration attempts (rate limit records)');
 
 -- 他人の気になるは消せない（RLS で見えないので 0 行の削除になる）
 delete from public.interests

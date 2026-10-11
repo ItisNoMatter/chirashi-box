@@ -22,6 +22,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </Link>
           <nav className="flex gap-4 text-sm">
             <Link href="/">眺める</Link>
+            <Link href="/register">登録</Link>
             <Link href="/me">マイページ</Link>
           </nav>
         </header>

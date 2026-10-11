@@ -117,6 +117,34 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"pending_registrations": {
+                  Row: {
+                    "content_hash": string,"created_at": string,"extraction": NonNullable<Json>,"id": string,"image_url": string | null,"publisher": Database["public"]['Enums']["source_publisher"],"url": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "content_hash": string,"created_at"?: string,"extraction": NonNullable<Json>,"id"?: string,"image_url"?: string | null,"publisher": Database["public"]['Enums']["source_publisher"],"url": string,"user_id": string
+                  }
+                  Update: {
+                    "content_hash"?: string,"created_at"?: string,"extraction"?: NonNullable<Json>,"id"?: string,"image_url"?: string | null,"publisher"?: Database["public"]['Enums']["source_publisher"],"url"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"registration_attempts": {
+                  Row: {
+                    "created_at": string,"id": number,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: never,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: never,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"venues": {
                   Row: {
                     "address": string | null,"created_at": string,"id": string,"municipality": string | null,"name": string,"place_id": string,"prefecture": string | null,"updated_at": string,"website_url": string | null

@@ -224,7 +224,8 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-enable_confirmations = false
+# 本番と同じく有効にする。無効だとメールアドレスの変更がコードの確認なしに反映される（0008）。
+enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
@@ -245,6 +246,20 @@ otp_expiry = 3600
 # sender_name = "Admin"
 
 # Uncomment to customize email template
+# ホーム画面に追加した PWA ではリンクが Safari 側で開いてしまうので、6桁のコードを送る（0008）。
+# 本番の Supabase にも同じテンプレートを設定すること。
+[auth.email.template.confirmation]
+subject = "chirashi-box の確認コード"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.magic_link]
+subject = "chirashi-box の確認コード"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.email_change]
+subject = "chirashi-box の確認コード"
+content_path = "./supabase/templates/email_change.html"
+
 # [auth.email.template.invite]
 # subject = "You have been invited"
 # content_path = "./supabase/templates/invite.html"
