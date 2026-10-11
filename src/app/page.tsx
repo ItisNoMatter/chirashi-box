@@ -1,69 +1,106 @@
-import Image from "next/image";
+import { Suspense } from "react";
+import { Loading } from "@/components/Loading";
+import Link from "next/link";
+import { FlyerGrid } from "@/components/FlyerGrid";
+import { type AreaFilter, type BrowseTab, browseExhibitions, listAreas, listMyInterestIds } from "@/lib/exhibitions";
+import { todayInTokyo } from "@/lib/today";
 
-export default function Home() {
+const TABS: { tab: BrowseTab; label: string }[] = [
+  { tab: "ongoing", label: "開催中" },
+  { tab: "upcoming", label: "もうすぐ" },
+];
+
+export default function BrowsePage(props: PageProps<"/">) {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <Suspense fallback={<Loading />}>
+      <BrowsePageContent {...props} />
+    </Suspense>
+  );
+}
+
+/** 眺める（0014）。 */
+async function BrowsePageContent(props: PageProps<"/">) {
+  const searchParams = await props.searchParams;
+  const tab: BrowseTab = searchParams.tab === "upcoming" ? "upcoming" : "ongoing";
+  const area: AreaFilter = {
+    prefecture: single(searchParams.pref),
+    municipality: single(searchParams.city),
+  };
+  const today = await todayInTokyo();
+
+  const [flyers, areas, interestedIds] = await Promise.all([
+    browseExhibitions(tab, area, today),
+    listAreas(),
+    listMyInterestIds(),
+  ]);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <nav className="flex border-b border-neutral-200 dark:border-neutral-800">
+        {TABS.map(({ tab: t, label }) => (
+          <Link
+            key={t}
+            href={{ query: { ...withoutEmpty({ pref: area.prefecture, city: area.municipality }), tab: t } }}
+            className={[
+              "flex-1 border-b-2 py-2 text-center text-sm",
+              t === tab ? "border-foreground font-bold" : "border-transparent text-neutral-500",
+            ].join(" ")}
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+            {label}
+          </Link>
+        ))}
+      </nav>
+
+      <AreaPicker areas={areas} area={area} tab={tab} />
+
+      {flyers.length === 0 ? (
+        <p className="py-12 text-center text-sm text-neutral-500">この条件の展示はまだありません</p>
+      ) : (
+        <FlyerGrid flyers={flyers} interestedIds={interestedIds} today={today} />
+      )}
     </div>
   );
+}
+
+function AreaPicker({ areas, area, tab }: { areas: Map<string, string[]>; area: AreaFilter; tab: BrowseTab }) {
+  const municipalities = area.prefecture ? (areas.get(area.prefecture) ?? []) : [];
+  const chip = (label: string, query: Record<string, string>, active: boolean) => (
+    <Link
+      key={label}
+      href={{ query: { ...query, tab } }}
+      className={[
+        "whitespace-nowrap rounded-full border px-3 py-1 text-xs",
+        active
+          ? "border-foreground bg-foreground text-background"
+          : "border-neutral-300 text-neutral-600 dark:border-neutral-700 dark:text-neutral-300",
+      ].join(" ")}
+    >
+      {label}
+    </Link>
+  );
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-2 overflow-x-auto">
+        {chip("すべて", {}, !area.prefecture)}
+        {[...areas.keys()].map((prefecture) => chip(prefecture, { pref: prefecture }, area.prefecture === prefecture))}
+      </div>
+      {municipalities.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto">
+          {chip(`${area.prefecture}すべて`, { pref: area.prefecture! }, !area.municipality)}
+          {municipalities.map((municipality) =>
+            chip(municipality, { pref: area.prefecture!, city: municipality }, area.municipality === municipality),
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function single(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value || undefined;
+}
+
+function withoutEmpty(query: Record<string, string | undefined>): Record<string, string> {
+  return Object.fromEntries(Object.entries(query).filter((entry): entry is [string, string] => !!entry[1]));
 }

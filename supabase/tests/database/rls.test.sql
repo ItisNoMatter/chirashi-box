@@ -23,7 +23,8 @@ insert into public.blocked_domains (domain) values ('aggregator.example');
 -- 未ログイン（anon）
 set local role anon;
 
-select is((select count(*) from public.exhibitions)::int, 2,
+select is((select count(*) from public.exhibitions
+            where venue_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')::int, 2,
   'anon can browse exhibitions');
 select is((select count(*) from public.interests)::int, 0,
   'anon cannot see any interests');
