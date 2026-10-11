@@ -60,7 +60,8 @@ export async function startUrlRegistration(
 
   const fetched = await deps.fetcher.fetch(url);
   if (fetched.kind === "robots_disallowed") return { kind: "rejected", reason: "robots_disallowed" };
-  if (fetched.kind === "failed") return { kind: "rejected", reason: "fetch_failed" };
+  // JSON を受け取るのは巡回の一覧だけ（0026）。登録には HTML のページを求める。
+  if (fetched.kind === "failed" || fetched.format === "json") return { kind: "rejected", reason: "fetch_failed" };
 
   const page = readPage(fetched.html, fetched.finalUrl);
   const extraction = await deps.extractor.extract({ url: fetched.finalUrl, mainText: page.mainText });

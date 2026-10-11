@@ -7,7 +7,8 @@ export interface PageFetcher {
 }
 
 export type FetchResult =
-  | { kind: "ok"; html: string; finalUrl: string }
+  /** format: "json" は、一覧を JSON で配るサイトの一覧（巡回のみ）。省略時は HTML。 */
+  | { kind: "ok"; html: string; finalUrl: string; format?: "json" }
   | { kind: "robots_disallowed" }
   | { kind: "failed" };
 

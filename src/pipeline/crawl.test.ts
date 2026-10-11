@@ -123,6 +123,47 @@ describe("crawlVenue", () => {
     ]);
   });
 
+  describe("一覧が JSON のとき（一覧を JavaScript で組み立てるサイト）", () => {
+    const JSON_URL = "https://minato-moca.example/json/exhibitions.json";
+    const listingJson = JSON.stringify([
+      {
+        id: 1,
+        title: "光と影のあいだ",
+        start: "20260901",
+        end: "20261014",
+        imagePc: "/img/light.jpg",
+        permalink: "/exhibitions/light.html",
+      },
+      { id: 2, title: "外部の会場での展示", permalink: "https://aggregator.example/event/1" },
+    ]);
+    const jsonTarget = { ...target, listingUrl: JSON_URL };
+    const jsonPages = {
+      [JSON_URL]: { kind: "ok", html: listingJson, finalUrl: JSON_URL, format: "json" } as FetchResult,
+      [DETAIL_URL]: ok(detailHtml(), DETAIL_URL),
+    };
+
+    it("同じサイトのページを指す値を、同じ項目の文字（展示名・会期など）を添えて LLM に渡す", async () => {
+      const { deps } = setup({ pages: jsonPages });
+
+      const summary = await crawlVenue(jsonTarget, deps, TODAY);
+
+      expect(deps.linkSelector.received).toEqual([[{ text: "光と影のあいだ 20260901 20261014", url: DETAIL_URL }]]);
+      expect(summary.created).toBe(1);
+    });
+
+    it("JSON が前回と同じなら、LLM を一度も呼ばずに終える", async () => {
+      const { deps, store } = setup({ pages: jsonPages });
+      await crawlVenue(jsonTarget, deps, TODAY);
+      const [{ listingHash }] = store.listingCrawls;
+
+      const again = setup({ pages: jsonPages });
+      const summary = await crawlVenue({ ...jsonTarget, lastListingHash: listingHash }, again.deps, TODAY);
+
+      expect(summary.skipped).toBe("listing_unchanged");
+      expect(again.deps.linkSelector.received).toEqual([]);
+    });
+  });
+
   it("新しい個別ページは抽出し、巡回対象の会場の新しい展示として、出どころを「会場」で登録する", async () => {
     const { deps, store } = setup();
 

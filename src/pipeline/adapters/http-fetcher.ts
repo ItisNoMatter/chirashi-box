@@ -33,10 +33,13 @@ export class HttpPageFetcher implements PageFetcher {
         current = new URL(location, current).toString();
         continue;
       }
-      if (!response.ok || !response.headers.get("content-type")?.includes("text/html")) return { kind: "failed" };
+      const contentType = response.headers.get("content-type") ?? "";
+      const isJson = contentType.includes("application/json");
+      if (!response.ok || !(contentType.includes("text/html") || isJson)) return { kind: "failed" };
 
       const html = await readLimited(response);
-      return html === null ? { kind: "failed" } : { kind: "ok", html, finalUrl: current };
+      if (html === null) return { kind: "failed" };
+      return isJson ? { kind: "ok", html, finalUrl: current, format: "json" } : { kind: "ok", html, finalUrl: current };
     }
     return { kind: "failed" };
   }
@@ -47,7 +50,7 @@ async function request(url: string): Promise<Response | null> {
   try {
     return await fetch(url, {
       redirect: "manual",
-      headers: { "user-agent": USER_AGENT, accept: "text/html" },
+      headers: { "user-agent": USER_AGENT, accept: "text/html, application/json;q=0.9" },
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
   } catch {

@@ -159,6 +159,20 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"site_policies": {
+                  Row: {
+                    "allow_images": boolean,"allow_links": boolean,"domain": string,"note": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "allow_images"?: boolean,"allow_links"?: boolean,"domain": string,"note"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "allow_images"?: boolean,"allow_links"?: boolean,"domain"?: string,"note"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"venues": {
                   Row: {
                     "address": string | null,"created_at": string,"id": string,"municipality": string | null,"name": string,"place_id": string,"prefecture": string | null,"updated_at": string,"website_url": string | null

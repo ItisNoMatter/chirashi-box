@@ -3,7 +3,7 @@ import type { LocalDate } from "@/domain/period";
 import { parseHTML } from "linkedom";
 import type { CrawlStore, CrawlSummary, CrawlTarget, DuplicateJudge, Link, LinkSelector } from "./crawl-ports";
 import type { ExhibitionExtractor, PageFetcher } from "./ports";
-import { readPage } from "./read-page";
+import { readPage, sha256 } from "./read-page";
 
 export type CrawlDeps = {
   fetcher: PageFetcher;
@@ -22,12 +22,13 @@ export async function crawlVenue(target: CrawlTarget, deps: CrawlDeps, today: Lo
   if (listing.kind === "robots_disallowed") return { ...summary, skipped: "robots_disallowed" };
   if (listing.kind === "failed") return { ...summary, skipped: "fetch_failed" };
 
-  const listingPage = readPage(listing.html, listing.finalUrl);
-  if (listingPage.contentHash === target.lastListingHash) return { ...summary, skipped: "listing_unchanged" };
+  const isJson = listing.format === "json";
+  const listingHash = isJson ? sha256(listing.html) : readPage(listing.html, listing.finalUrl).contentHash;
+  if (listingHash === target.lastListingHash) return { ...summary, skipped: "listing_unchanged" };
 
   const detailUrls = await deps.linkSelector.select({
     listingUrl: listing.finalUrl,
-    links: sameSiteLinks(listing.html, listing.finalUrl),
+    links: isJson ? sameSiteLinksInJson(listing.html, listing.finalUrl) : sameSiteLinks(listing.html, listing.finalUrl),
   });
 
   for (const url of detailUrls) {
@@ -35,7 +36,7 @@ export async function crawlVenue(target: CrawlTarget, deps: CrawlDeps, today: Lo
     summary[outcome]++;
   }
 
-  await deps.store.recordListingCrawl(target.id, listingPage.contentHash);
+  await deps.store.recordListingCrawl(target.id, listingHash);
   return summary;
 }
 
@@ -52,7 +53,7 @@ async function crawlDetailPage(
   if (known && known.endDate < today) return "ignored";
 
   const fetched = await deps.fetcher.fetch(url);
-  if (fetched.kind !== "ok") return "ignored";
+  if (fetched.kind !== "ok" || fetched.format === "json") return "ignored";
 
   const page = readPage(fetched.html, fetched.finalUrl);
   // 0010: 主要部分が前回と同じなら、抽出し直さない。展示ではなかったページも同じ。
@@ -139,6 +140,51 @@ function sameSiteLinks(html: string, pageUrl: string): Link[] {
     if (!links.has(key)) links.set(key, { text: anchor.textContent?.trim() ?? "", url: key });
   }
   return [...links.values()];
+}
+
+const ASSET = /\.(?:jpe?g|png|gif|webp|svg|pdf|css|js|json)$/i;
+
+/**
+ * 一覧を JSON で配り、JavaScript で組み立てるサイトの、同じサイト内のリンク（0026）。
+ * 同じサイトのページを指す値を、同じ項目の文字（展示名・会期など）を添えて返す。
+ */
+function sameSiteLinksInJson(json: string, pageUrl: string): Link[] {
+  let data: unknown;
+  try {
+    data = JSON.parse(json);
+  } catch {
+    return [];
+  }
+  const host = hostOf(pageUrl);
+  const links = new Map<string, Link>();
+  const visit = (value: unknown) => {
+    if (Array.isArray(value)) return value.forEach(visit);
+    if (value === null || typeof value !== "object") return;
+    const strings = Object.values(value).filter((field): field is string => typeof field === "string" && field !== "");
+    const urls: string[] = [];
+    const texts: string[] = [];
+    for (const field of strings) {
+      const url = sameSitePageUrl(field, pageUrl, host);
+      if (url) urls.push(url);
+      else if (!/^(?:\/|https?:)/.test(field)) texts.push(field);
+    }
+    for (const url of urls) if (!links.has(url)) links.set(url, { text: texts.join(" "), url });
+    Object.values(value).forEach(visit);
+  };
+  visit(data);
+  return [...links.values()];
+}
+
+function sameSitePageUrl(field: string, pageUrl: string, host: string): string | null {
+  if (!/^(?:\/|https?:\/\/)/.test(field)) return null;
+  try {
+    const url = new URL(field, pageUrl);
+    if (!/^https?:$/.test(url.protocol) || hostOf(url.toString()) !== host || ASSET.test(url.pathname)) return null;
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return null;
+  }
 }
 
 function sameVenueName(a: string, b: string): boolean {

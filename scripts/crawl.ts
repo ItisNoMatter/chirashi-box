@@ -8,6 +8,7 @@ import { ClaudeDuplicateJudge, ClaudeLinkSelector } from "@/pipeline/adapters/cl
 import { ClaudeExhibitionExtractor } from "@/pipeline/adapters/claude-extractor";
 import { HttpPageFetcher } from "@/pipeline/adapters/http-fetcher";
 import { SupabaseCrawlStore } from "@/pipeline/adapters/supabase-store";
+import { usageTotal } from "@/pipeline/adapters/usage";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -19,7 +20,7 @@ async function main() {
   const store = new SupabaseCrawlStore();
   const deps = {
     fetcher: new HttpPageFetcher(),
-    linkSelector: new ClaudeLinkSelector(),
+    linkSelector: new ClaudeLinkSelector(todayInTokyo),
     extractor: new ClaudeExhibitionExtractor(todayInTokyo),
     duplicateJudge: new ClaudeDuplicateJudge(),
     store,
@@ -38,6 +39,8 @@ async function main() {
       console.error(`${target.venueName}: 失敗`, error);
     }
   }
+
+  console.log(`Claude API: ${JSON.stringify(usageTotal)}`);
 
   // 0021: 作成から24時間を過ぎた登録待ちを消す。試行の記録はレート制限に要る24時間より長めに残す。
   const now = Date.now();

@@ -39,6 +39,21 @@ describe("readPage", () => {
     expect(after.contentHash).not.toBe(before.contentHash);
   });
 
+  it("<main> があれば、その中を本文にする（本文が短くても、外の案内文を本文と取り違えない）", () => {
+    const html = `<!doctype html><html lang="ja"><head><title>架空美術館</title></head><body>
+      <div class="cookie-consent"><p>当サイトでは、利用状況の把握とサイトの改善のため、クッキー（Cookie）を利用したアクセス解析を行っています。「同意する」ボタンを押していただいた場合にのみ、アクセス解析を行います。詳しくはプライバシーポリシーをご覧ください。</p></div>
+      <main><div class="summary"><p>開催予定 小企画展</p><h1>光と影のあいだ</h1>
+        <dl><dt>会期</dt><dd>2026年9月1日[火]－10月14日[水]</dd><dt>会場</dt><dd>版画素描展示室</dd></dl></div></main>
+      <footer>© 架空美術館</footer></body></html>`;
+
+    const result = readPage(html, "https://museum.example/ex/1");
+
+    expect(result.mainText).toContain("光と影のあいだ");
+    expect(result.mainText).toContain("2026年9月1日");
+    expect(result.mainText).not.toContain("クッキー");
+    expect(result.mainText).not.toContain("© 架空美術館");
+  });
+
   it("og:image を、ページの URL を基準にした絶対 URL で返す", () => {
     const result = readPage(
       page({ head: '<meta property="og:image" content="/media/poster/2026_light.jpg">' }),

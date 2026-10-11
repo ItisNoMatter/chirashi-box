@@ -4,6 +4,7 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import type { LocalDate } from "@/domain/period";
 import type { ExhibitionExtractor, Extraction } from "../ports";
+import { recordUsage } from "./usage";
 
 /** 抽出のモデルと effort は設定で切り替えられるようにする（0012）。 */
 const MODEL = process.env.EXTRACTION_MODEL ?? "claude-opus-5-5";
@@ -50,6 +51,7 @@ export class ClaudeExhibitionExtractor implements ExhibitionExtractor {
         },
       ],
     });
+    recordUsage(response.usage);
 
     if (response.stop_reason === "refusal" || !response.parsed_output) return { isExhibitionPage: false };
     return toExtraction(response.parsed_output);
