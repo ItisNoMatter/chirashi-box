@@ -39,14 +39,14 @@ export type Database = {
                   ]
                 },"crawl_targets": {
                   Row: {
-                    "created_at": string,"enabled": boolean,"id": string,"last_crawled_at": string | null,"last_listing_hash": string | null,"listing_url": string,"terms_reviewed_at": string | null,"updated_at": string,"updated_by": string | null,"venue_id": string
+                    "created_at": string,"detail_url_pattern": string | null,"enabled": boolean,"id": string,"last_crawled_at": string | null,"last_listing_hash": string | null,"listing_url": string,"terms_reviewed_at": string | null,"updated_at": string,"updated_by": string | null,"venue_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"enabled"?: boolean,"id"?: string,"last_crawled_at"?: string | null,"last_listing_hash"?: string | null,"listing_url": string,"terms_reviewed_at"?: string | null,"updated_at"?: string,"updated_by"?: string | null,"venue_id": string
+                    "created_at"?: string,"detail_url_pattern"?: string | null,"enabled"?: boolean,"id"?: string,"last_crawled_at"?: string | null,"last_listing_hash"?: string | null,"listing_url": string,"terms_reviewed_at"?: string | null,"updated_at"?: string,"updated_by"?: string | null,"venue_id": string
                   }
                   Update: {
-                    "created_at"?: string,"enabled"?: boolean,"id"?: string,"last_crawled_at"?: string | null,"last_listing_hash"?: string | null,"listing_url"?: string,"terms_reviewed_at"?: string | null,"updated_at"?: string,"updated_by"?: string | null,"venue_id"?: string
+                    "created_at"?: string,"detail_url_pattern"?: string | null,"enabled"?: boolean,"id"?: string,"last_crawled_at"?: string | null,"last_listing_hash"?: string | null,"listing_url"?: string,"terms_reviewed_at"?: string | null,"updated_at"?: string,"updated_by"?: string | null,"venue_id"?: string
                   }
                   Relationships: [
                     {
@@ -56,6 +56,20 @@ isOneToOne: false
       referencedRelation: "venues"
       referencedColumns: ["id"]
     }
+                  ]
+                },"crawled_pages": {
+                  Row: {
+                    "checked_at": string,"content_hash": string,"url": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "checked_at"?: string,"content_hash": string,"url": string
+                  }
+                  Update: {
+                    "checked_at"?: string,"content_hash"?: string,"url"?: string
+                  }
+                  Relationships: [
+                    
                   ]
                 },"exhibition_sources": {
                   Row: {

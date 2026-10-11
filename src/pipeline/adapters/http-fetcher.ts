@@ -9,6 +9,9 @@ const USER_AGENT = `chirashi-box/0.1 (+${process.env.CRAWLER_CONTACT ?? "contact
 const TIMEOUT_MS = 10_000;
 const MAX_BYTES = 3 * 1024 * 1024;
 const MAX_REDIRECTS = 3;
+/** 館のサーバーに配慮し、同じホストへのリクエストの間隔をあける（0011）。 */
+const MIN_INTERVAL_PER_HOST_MS = Number(process.env.CRAWL_INTERVAL_MS ?? 2_000);
+const lastRequestAt = new Map<string, number>();
 
 /**
  * robots.txt を確かめてからページを取得する。
@@ -40,6 +43,7 @@ export class HttpPageFetcher implements PageFetcher {
 }
 
 async function request(url: string): Promise<Response | null> {
+  await waitForTurn(new URL(url).host);
   try {
     return await fetch(url, {
       redirect: "manual",
@@ -49,6 +53,12 @@ async function request(url: string): Promise<Response | null> {
   } catch {
     return null;
   }
+}
+
+async function waitForTurn(host: string) {
+  const wait = (lastRequestAt.get(host) ?? 0) + MIN_INTERVAL_PER_HOST_MS - Date.now();
+  if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+  lastRequestAt.set(host, Date.now());
 }
 
 async function readLimited(response: Response): Promise<string | null> {

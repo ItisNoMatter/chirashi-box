@@ -1,0 +1,31 @@
+# 日次の巡回（0011）。会場1つずつ順に処理する。
+# 必要な Secrets: SUPABASE_URL, SUPABASE_SECRET_KEY, ANTHROPIC_API_KEY, CRAWLER_CONTACT
+name: crawl
+
+on:
+  schedule:
+    # 毎日 03:00（日本時間）。cron は混雑時に遅れることがあるが、日次なら問題ない。
+    - cron: "0 18 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: crawl
+  cancel-in-progress: false
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run crawl
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CRAWLER_CONTACT: ${{ secrets.CRAWLER_CONTACT }}
