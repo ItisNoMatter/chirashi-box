@@ -190,7 +190,15 @@ isOneToOne: false
                 }
           }
           Views: {
-            [_ in never]: never
+            "shared_image_urls": {
+                  Row: {
+                    "image_url": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                }
           }
           Functions: {
             [_ in never]: never
