@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { Loading } from "@/components/Loading";
+import { MyPageSkeleton } from "@/components/Skeletons";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FlyerGrid } from "@/components/FlyerGrid";
@@ -9,7 +9,7 @@ import { todayInTokyo } from "@/lib/today";
 
 export default function UserPage(props: PageProps<"/users/[id]">) {
   return (
-    <Suspense fallback={<Loading />}>
+    <Suspense fallback={<MyPageSkeleton />}>
       <UserPageContent {...props} />
     </Suspense>
   );

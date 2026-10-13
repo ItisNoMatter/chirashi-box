@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { Loading } from "@/components/Loading";
+import { ExhibitionSkeleton } from "@/components/Skeletons";
 import { notFound } from "next/navigation";
 import { Flyer } from "@/components/Flyer";
 import { InterestButton } from "@/components/InterestButton";
@@ -11,7 +11,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function ExhibitionPage(props: PageProps<"/exhibitions/[id]">) {
   return (
-    <Suspense fallback={<Loading />}>
+    <Suspense fallback={<ExhibitionSkeleton />}>
       <ExhibitionPageContent {...props} />
     </Suspense>
   );

@@ -1,12 +1,12 @@
 import { Suspense } from "react";
-import { Loading } from "@/components/Loading";
+import { MyPageSkeleton } from "@/components/Skeletons";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUserId } from "@/lib/exhibitions";
 
 export default function MePage() {
   return (
-    <Suspense fallback={<Loading />}>
+    <Suspense fallback={<MyPageSkeleton />}>
       <MePageContent />
     </Suspense>
   );
