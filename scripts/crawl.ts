@@ -2,6 +2,7 @@
  * 日次の巡回（0011）。GitHub Actions の cron から実行する。
  *   npm run crawl
  * 会場1つずつ順に処理し、1つが失敗しても残りの会場は続ける。
+ * 1つでも失敗した会場があれば、最後に終了コード1で終える（0030）。
  */
 import { crawlVenue } from "@/pipeline/crawl";
 import { ClaudeDuplicateJudge, ClaudeLinkSelector } from "@/pipeline/adapters/claude-crawl";
@@ -29,13 +30,13 @@ async function main() {
   const targets = await store.listCrawlTargets();
   console.log(`巡回対象: ${targets.length}件`);
 
-  let failures = 0;
+  const failed: string[] = [];
   for (const target of targets) {
     try {
       const summary = await crawlVenue(target, deps, todayInTokyo());
       console.log(`${target.venueName}: ${JSON.stringify(summary)}`);
     } catch (error) {
-      failures++;
+      failed.push(target.venueName);
       console.error(`${target.venueName}: 失敗`, error);
     }
   }
@@ -46,8 +47,8 @@ async function main() {
   const now = Date.now();
   await store.deleteStaleRegistrationData(new Date(now - DAY_MS), new Date(now - 2 * DAY_MS));
 
-  if (targets.length > 0 && failures === targets.length) {
-    throw new Error("すべての会場の巡回に失敗しました");
+  if (failed.length > 0) {
+    throw new Error(`巡回に失敗した会場: ${failed.length}/${targets.length}件（${failed.join("、")}）`);
   }
 }
 
