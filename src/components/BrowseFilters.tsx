@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type MouseEvent, type ReactNode, useOptimistic, useTransition } from "react";
+import { type MouseEvent, type ReactNode, type TouchEvent, useOptimistic, useRef, useTransition } from "react";
 import type { AreaFilter, BrowseTab } from "@/lib/exhibitions";
+import { type Point, swipeOf } from "@/ui/swipe";
 import { FlyerGridSkeleton } from "./Skeletons";
 
 const TABS: { tab: BrowseTab; label: string }[] = [
@@ -17,6 +18,7 @@ type Selection = { tab: BrowseTab; area: AreaFilter };
  * 眺めるページのタブとエリアの選択肢（0014）。
  * 同じページの中の切り替えでは、次のデータが届くまで前の画面が残り、押せたのかがわからない。
  * そこで押した瞬間に選択の表示を切り替え、届くまでグリッドを仮の表示にする。
+ * グリッドの上の横スワイプでもタブを切り替える（0032）。
  */
 export function BrowseFilters({
   tab,
@@ -28,14 +30,36 @@ export function BrowseFilters({
   const [pending, startTransition] = useTransition();
   const [selection, setSelection] = useOptimistic<Selection>({ tab, area });
 
-  function navigate(event: MouseEvent<HTMLAnchorElement>, next: Selection) {
-    // 新しいタブで開くなどの操作は、ふつうのリンクとして扱う。
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
-    event.preventDefault();
+  const touchStart = useRef<Point | null>(null);
+
+  function go(next: Selection) {
     startTransition(() => {
       setSelection(next);
       router.push(hrefOf(next));
     });
+  }
+
+  function navigate(event: MouseEvent<HTMLAnchorElement>, next: Selection) {
+    // 新しいタブで開くなどの操作は、ふつうのリンクとして扱う。
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    event.preventDefault();
+    go(next);
+  }
+
+  function onTouchStart(event: TouchEvent) {
+    // 2本指（拡大など）はスワイプにしない。
+    touchStart.current = event.touches.length === 1 ? pointOf(event.touches[0]) : null;
+  }
+
+  function onTouchEnd(event: TouchEvent) {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start || event.changedTouches.length !== 1) return;
+    const swipe = swipeOf(start, pointOf(event.changedTouches[0]), window.innerWidth);
+    // 左へスワイプで右隣のタブへ、右へスワイプで左隣のタブへ。端のタブではそれ以上進まない。
+    const index = TABS.findIndex(({ tab: t }) => t === selection.tab) + (swipe === "left" ? 1 : swipe === "right" ? -1 : 0);
+    const next = TABS[index];
+    if (swipe && next) go({ tab: next.tab, area: selection.area });
   }
 
   const link = (next: Selection, active: boolean, className: string, label: string) => (
@@ -99,9 +123,16 @@ export function BrowseFilters({
         )}
       </div>
 
-      {pending ? <FlyerGridSkeleton /> : children}
+      {/* チップの行は横にスクロールするので、スワイプはグリッドの上だけで受け取る。 */}
+      <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onTouchCancel={() => (touchStart.current = null)}>
+        {pending ? <FlyerGridSkeleton /> : children}
+      </div>
     </div>
   );
+}
+
+function pointOf(touch: { clientX: number; clientY: number }): Point {
+  return { x: touch.clientX, y: touch.clientY };
 }
 
 function hrefOf({ tab, area }: Selection): string {
